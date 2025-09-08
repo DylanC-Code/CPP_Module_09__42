@@ -1,0 +1,131 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   BitcoinExchange.cpp                                :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: dcastor <dcastor@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/09/08 10:51:03 by dcastor           #+#    #+#             */
+/*   Updated: 2025/09/08 16:43:42 by dcastor          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "BitcoinExchange.hpp"
+
+#include <string>
+#include <sstream>
+#include <cctype>
+#include <iomanip>
+#include <stdexcept>
+
+// Helpers
+
+static std::string trim(const std::string &s)
+{
+	std::string::size_type a = 0, b = s.size();
+	while (a < b && std::isspace(static_cast<unsigned char>(s[a])))
+		++a;
+	while (b > a && std::isspace(static_cast<unsigned char>(s[b - 1])))
+		--b;
+	return s.substr(a, b - a);
+}
+
+static bool isLeap(int y) { return (y % 400 == 0) || ((y % 4 == 0) && (y % 100 != 0)); }
+
+static int daysInMonth(int y, int m)
+{
+	static const int d[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+	if (m == 2)
+		return d[1] + (isLeap(y) ? 1 : 0);
+	return (m >= 1 && m <= 12) ? d[m - 1] : 0;
+}
+
+// ************************* //
+// Private Members functions //
+// ************************* //
+
+std::string BitcoinExchange::parseDate(const std::string &raw)
+{
+	std::string s = trim(raw);
+	if (s.size() != 10 || s[4] != '-' || s[7] != '-')
+		throw std::runtime_error("Invalid date");
+	for (size_t i = 0; i < s.size(); ++i)
+	{
+		if (i == 4 || i == 7)
+			continue;
+		if (!std::isdigit(static_cast<unsigned char>(s[i])))
+			throw std::runtime_error("Invalid date");
+	}
+
+	int y = 0, m = 0, d = 0;
+	{
+		std::istringstream yy(s.substr(0, 4));
+		yy >> y;
+		if (!yy || !yy.eof())
+			throw std::runtime_error("Invalid date");
+		std::istringstream mm(s.substr(5, 2));
+		mm >> m;
+		if (!mm || !mm.eof())
+			throw std::runtime_error("Invalid date");
+		std::istringstream dd(s.substr(8, 2));
+		dd >> d;
+		if (!dd || !dd.eof())
+			throw std::runtime_error("Invalid date");
+	}
+
+	if (m < 1 || m > 12)
+		throw std::runtime_error("Invalid date");
+	int mdays = daysInMonth(y, m);
+	if (d < 1 || d > mdays)
+		throw std::runtime_error("Invalid date");
+
+	std::ostringstream oss;
+	oss << std::setfill('0') << std::setw(4) << y << "-"
+		<< std::setw(2) << m << "-" << std::setw(2) << d;
+	return oss.str();
+}
+
+double BitcoinExchange::parseExchangeRate(const std::string &raw)
+{
+	std::string s = trim(raw);
+	double v = 0.0;
+
+	if (s.empty())
+		throw std::runtime_error("Empty value");
+	if (s[0] == '-')
+		throw std::runtime_error("Value must be positive");
+	std::istringstream iss(s);
+	iss >> v;
+
+	if (!iss || !iss.eof())
+		throw std::runtime_error("Invalid value");
+
+	if (v < 0.0)
+		throw std::runtime_error("Negative value");
+	return v;
+}
+
+BitcoinExchange::BitcoinExchange(std::ifstream &input_file)
+{
+	std::string line;
+
+	if (std::getline(input_file, line))
+	{
+		if (line != "date,exchange_rate")
+			throw std::runtime_error("Invalid header");
+	}
+	else
+		throw std::runtime_error("Empty file");
+
+	unsigned long line_number = 1;
+	while (std::getline(input_file, line))
+	{
+		std::string::size_type bar = line.find(',');
+		if (bar == std::string::npos)
+			throw std::runtime_error("Missing ',' separator");
+		std::string dateNorm = BitcoinExchange::parseDate(line.substr(0, bar));
+		double valueNorm = BitcoinExchange::parseExchangeRate(line.substr(bar + 1));
+		std::cout << line_number << ": " << dateNorm << " => " << valueNorm << std::endl;
+		line_number++;
+	}
+}
