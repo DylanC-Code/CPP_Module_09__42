@@ -6,7 +6,7 @@
 /*   By: dcastor <dcastor@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/08 09:22:24 by dcastor           #+#    #+#             */
-/*   Updated: 2025/09/08 16:50:57 by dcastor          ###   ########.fr       */
+/*   Updated: 2025/09/09 09:00:21 by dcastor          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,8 @@ int main(int argc, char **argv)
 	}
 	try
 	{
-		BitcoinExchange btc(database_file);
+		BitcoinExchange btc_ex(database_file);
+		btc_ex.convert_and_display_input_file(input_file);
 	}
 	catch (const std::exception &e)
 	{

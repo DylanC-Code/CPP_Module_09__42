@@ -6,7 +6,7 @@
 /*   By: dcastor <dcastor@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/08 10:51:03 by dcastor           #+#    #+#             */
-/*   Updated: 2025/09/08 16:45:50 by dcastor          ###   ########.fr       */
+/*   Updated: 2025/09/09 09:15:36 by dcastor          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -105,6 +105,28 @@ double BitcoinExchange::parseExchangeRate(const std::string &raw)
 	return v;
 }
 
+float BitcoinExchange::parseValue(const std::string &raw)
+{
+	std::string s = trim(raw);
+	float v = 0.0;
+
+	if (s.empty())
+		throw std::runtime_error("bad input");
+	if (s[0] == '-')
+		throw std::runtime_error("not a positive number");
+	std::istringstream iss(s);
+	iss >> v;
+	if (!iss || !iss.eof())
+		throw std::runtime_error("bad input");
+	if (v < 0.0)
+		throw std::runtime_error("not a positive number");
+	if (v > 1000)
+		throw std::runtime_error("too large a number");
+	return v;
+}
+
+// Constructors
+
 BitcoinExchange::BitcoinExchange(std::ifstream &input_file)
 {
 	std::string line;
@@ -118,10 +140,41 @@ BitcoinExchange::BitcoinExchange(std::ifstream &input_file)
 		throw std::runtime_error("Empty file");
 	while (std::getline(input_file, line))
 	{
-		std::string::size_type bar = line.find(',');
-		if (bar == std::string::npos)
+		std::string::size_type commaPosition = line.find(',');
+		if (commaPosition == std::string::npos)
 			throw std::runtime_error("Missing ',' separator");
-		std::string date = BitcoinExchange::parseDate(line.substr(0, bar));
-		this->_data[date] = BitcoinExchange::parseExchangeRate(line.substr(bar + 1));
+		std::string date = BitcoinExchange::parseDate(line.substr(0, commaPosition));
+		this->_data[date] = BitcoinExchange::parseExchangeRate(line.substr(commaPosition + 1));
+	}
+}
+
+// Public Member Functions
+
+void BitcoinExchange::convert_and_display_input_file(std::ifstream &bitcoin_input_stream) const
+{
+	std::string line;
+
+	if (std::getline(bitcoin_input_stream, line))
+	{
+		if (line != "date | value")
+			throw std::runtime_error("Invalid bitcoin input streaam header");
+		while (std::getline(bitcoin_input_stream, line))
+		{
+			try
+			{
+
+				std::string::size_type barPosition = line.find('|');
+				if (barPosition == std::string::npos)
+					throw std::runtime_error("Missing '|' separator");
+				std::string date = BitcoinExchange::parseDate(line.substr(0, barPosition));
+				float value = BitcoinExchange::parseValue(line.substr(barPosition + 1));
+				double exchange_rate = BitcoinExchange::findExchangeRate(date);
+				std::cout << date << " => " << value << " = " << value * exchange_rate << std::cout;
+			}
+			catch (const std::exception &e)
+			{
+				std::cout << "Error: " << e.what() << std::endl;
+			}
+		}
 	}
 }
