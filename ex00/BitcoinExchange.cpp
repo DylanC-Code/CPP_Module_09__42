@@ -6,7 +6,7 @@
 /*   By: dcastor <dcastor@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/08 10:51:03 by dcastor           #+#    #+#             */
-/*   Updated: 2025/09/08 16:43:42 by dcastor          ###   ########.fr       */
+/*   Updated: 2025/09/08 16:45:50 by dcastor          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -116,16 +116,12 @@ BitcoinExchange::BitcoinExchange(std::ifstream &input_file)
 	}
 	else
 		throw std::runtime_error("Empty file");
-
-	unsigned long line_number = 1;
 	while (std::getline(input_file, line))
 	{
 		std::string::size_type bar = line.find(',');
 		if (bar == std::string::npos)
 			throw std::runtime_error("Missing ',' separator");
-		std::string dateNorm = BitcoinExchange::parseDate(line.substr(0, bar));
-		double valueNorm = BitcoinExchange::parseExchangeRate(line.substr(bar + 1));
-		std::cout << line_number << ": " << dateNorm << " => " << valueNorm << std::endl;
-		line_number++;
+		std::string date = BitcoinExchange::parseDate(line.substr(0, bar));
+		this->_data[date] = BitcoinExchange::parseExchangeRate(line.substr(bar + 1));
 	}
 }
