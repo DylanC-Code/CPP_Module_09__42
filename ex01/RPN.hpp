@@ -6,22 +6,29 @@
 /*   By: dcastor <dcastor@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/23 09:34:50 by dcastor           #+#    #+#             */
-/*   Updated: 2025/09/23 10:04:55 by dcastor          ###   ########.fr       */
+/*   Updated: 2025/09/23 11:12:13 by dcastor          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 #include <string>
+#include <deque>
 
 class RPN
 {
 private:
+	static std::deque<long> _operands;
+	static long _res;
+
+	static bool _isOperator(char c);
+	static void _compute(char op);
+	static void _checkSyntax(const std::string &input);
+
 public:
 	static const std::string operators;
 
-	static void checkSyntax(const std::string &input);
-	static bool isOperator(char c);
+	static long calculate(const std::string &input);
 
 	class SegmentTooLongException : public std::exception
 	{
@@ -43,4 +50,33 @@ public:
 	{
 		virtual const char *what() const throw();
 	};
+
+	class OperatorRequiredException : public std::exception
+	{
+	private:
+		std::string _msg;
+
+	public:
+		OperatorRequiredException();
+		virtual ~OperatorRequiredException() throw();
+		virtual const char *what() const throw();
+	};
+
+	class OperandRequiredException : public std::exception
+	{
+	private:
+		std::string _msg;
+
+	public:
+		OperandRequiredException(const char c);
+		virtual ~OperandRequiredException() throw();
+		virtual const char *what() const throw();
+	};
+
+	class ZeroedDivisionException : public std::exception
+	{
+		virtual const char *what() const throw();
+	};
+
+	friend class OperatorRequiredException;
 };
