@@ -6,7 +6,7 @@
 /*   By: dcastor <dcastor@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/08 10:51:03 by dcastor           #+#    #+#             */
-/*   Updated: 2025/09/09 09:15:36 by dcastor          ###   ########.fr       */
+/*   Updated: 2025/10/03 10:24:02 by dcastor          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -125,6 +125,18 @@ float BitcoinExchange::parseValue(const std::string &raw)
 	return v;
 }
 
+double BitcoinExchange::findExchangeRate(const std::string &date, const std::map<std::string, double> &data)
+{
+	std::map<std::string, double>::const_iterator it = data.find(date);
+	if (it != data.end())
+		return it->second;
+	it = data.lower_bound(date);
+	if (it == data.begin())
+		throw std::runtime_error("No exchange rate available");
+	--it;
+	return it->second;
+}
+
 // Constructors
 
 BitcoinExchange::BitcoinExchange(std::ifstream &input_file)
@@ -168,8 +180,8 @@ void BitcoinExchange::convert_and_display_input_file(std::ifstream &bitcoin_inpu
 					throw std::runtime_error("Missing '|' separator");
 				std::string date = BitcoinExchange::parseDate(line.substr(0, barPosition));
 				float value = BitcoinExchange::parseValue(line.substr(barPosition + 1));
-				double exchange_rate = BitcoinExchange::findExchangeRate(date);
-				std::cout << date << " => " << value << " = " << value * exchange_rate << std::cout;
+				double exchange_rate = BitcoinExchange::findExchangeRate(date, this->_data);
+				std::cout << date << " => " << value << " = " << value * exchange_rate << std::endl;
 			}
 			catch (const std::exception &e)
 			{
